@@ -1,10 +1,24 @@
 const User = require("../models/UserModel");
 
-//add to liked movies
+//get liked movies/
+
+module.exports.getLikedMovies = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const user = await await User.findOne({ email });
+    if (user) {
+      return res.json({ msg: "success", movies: user.likedMovies });
+    } else return res.json({ msg: "User with given email not found." });
+  } catch (error) {
+    return res.json({ msg: "Error fetching movies." });
+  }
+};
+
+//add movie to liked part
 module.exports.addToLikedMovies = async (req, res) => {
   try {
     const { email, data } = req.body;
-    const user = await User.findOne({ email });
+    const user = await await User.findOne({ email });
     if (user) {
       const { likedMovies } = user;
       const movieAlreadyLiked = likedMovies.find(({ id }) => id === data.id);
@@ -23,15 +37,29 @@ module.exports.addToLikedMovies = async (req, res) => {
     return res.json({ msg: "Error adding movie to the liked list" });
   }
 };
-//get liked movies
-module.exports.getLikedMovies = async (req, res) => {
+
+//remove a movie from your likedmovies
+module.exports.removeFromLikedMovies = async (req, res) => {
   try {
-    const { email } = req.params;
-    const user = await await User.findOne({ email });
+    const { email, movieId } = req.body;
+    const user = await User.findOne({ email });
     if (user) {
-      return res.json({ msg: "success", movies: user.likedMovies });
+      const movies = user.likedMovies;
+      const movieIndex = movies.findIndex(({ id }) => id === movieId);
+      if (!movieIndex) {
+        res.status(400).send({ msg: "Movie not found." });
+      }
+      movies.splice(movieIndex, 1);
+      await User.findByIdAndUpdate(
+        user._id,
+        {
+          likedMovies: movies,
+        },
+        { new: true }
+      );
+      return res.json({ msg: "Movie successfully removed.", movies });
     } else return res.json({ msg: "User with given email not found." });
   } catch (error) {
-    return res.json({ msg: "Error fetching movies." });
+    return res.json({ msg: "Error removing movie to the liked list" });
   }
 };
